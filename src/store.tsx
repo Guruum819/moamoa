@@ -223,7 +223,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         p: state.payments,
         n: state.settings.calendarName,
         a: state.settings.alarm,
-        i: state.settings.includePayday,
       }),
     [state],
   );

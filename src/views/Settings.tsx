@@ -69,13 +69,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
               </button>
             ))}
           </div>
-          <label className="switch-row">
-            <span>
-              <strong>급여일 일정도 넣기</strong>
-              <em>근무지마다 입금 예정일 하루</em>
-            </span>
-            <input type="checkbox" checked={state.settings.includePayday} onChange={(event) => dispatch({ type: 'patch-settings', patch: { includePayday: event.target.checked } })} />
-          </label>
+          <p className="hint">캘린더에는 근무만 넣어요. 예전에 올라간 급여일 일정은 다음 반영 때 달력에서 빠져요.</p>
         </section>
 
         <section>

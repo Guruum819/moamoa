@@ -1,6 +1,5 @@
 import { addDays, durationMinutes, formatHours, formatWon, icsUtc, seoulToday } from './date';
 import {
-  listBundles,
   paydayOf,
   shiftPay,
   type AlarmOption,
@@ -100,26 +99,6 @@ function collect(state: AppState, today: string): Draft[] {
     });
   }
 
-  if (state.settings.includePayday) {
-    for (const bundle of listBundles(state, today)) {
-      if (!bundle.payday || bundle.payday < start || bundle.payday > end) continue;
-      if (bundle.net <= 0) continue;
-      const wp = state.workplaces.find((item) => item.id === bundle.workplaceId);
-      if (!wp) continue;
-      const mark = state.payments[bundle.key];
-      if (mark?.received) continue;
-      drafts.push({
-        uid: `pay-${wp.id}-${bundle.payday.replace(/-/g, '')}@moamoa.app`,
-        summary: `${wp.name} 급여 ${formatWon(bundle.net)}`,
-        description: [`${wp.name} 급여 예정`, `예상 ${formatWon(bundle.net)}`, bundle.holiday ? `주휴수당 ${formatWon(bundle.holiday)} 포함` : '']
-          .filter(Boolean)
-          .join('\n'),
-        date: bundle.payday,
-        allDay: true,
-        alarm: false,
-      });
-    }
-  }
   return drafts;
 }
 
@@ -163,7 +142,7 @@ function calendarHead(settings: Settings, method?: string): string[] {
     'CALSCALE:GREGORIAN',
     ...(method ? [`METHOD:${method}`] : []),
     `X-WR-CALNAME:${esc(name)}`,
-    'X-WR-CALDESC:모아모아 근무와 급여 일정',
+    'X-WR-CALDESC:모아모아 근무 일정',
     'X-WR-TIMEZONE:Asia/Seoul',
     'X-APPLE-CALENDAR-COLOR:#3182F6',
     'X-PUBLISHED-TTL:PT15M',

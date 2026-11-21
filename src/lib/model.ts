@@ -103,7 +103,6 @@ export type AlarmOption = 'none' | '15' | '30' | '60' | '120' | '1440';
 export type Settings = {
   calendarName: string;
   alarm: AlarmOption;
-  includePayday: boolean;
   githubToken: string;
   gistId: string;
   gistOwner: string;
@@ -148,7 +147,6 @@ export function emptySettings(): Settings {
   return {
     calendarName: '모아모아',
     alarm: '30',
-    includePayday: true,
     githubToken: '',
     gistId: '',
     gistOwner: '',

@@ -230,7 +230,7 @@ describe('calendar feed identity', () => {
     const base = state({
       workplaces: [wp],
       shifts: [shift({ id: 's1', workplaceId: 'cafe', date: '2026-11-23', start: '09:00', end: '13:00', breakMin: 0 })],
-      settings: { ...emptyState().settings, includePayday: true, alarm: '30' },
+      settings: { ...emptyState().settings, alarm: '30' },
     });
     const now = new Date('2026-11-21T02:00:00Z');
     const first = planFeed(base, now, TODAY);
@@ -239,7 +239,8 @@ describe('calendar feed identity', () => {
     expect(first.ics).toMatch(/SUMMARY:메가커피\r\n/);
     expect(first.ics).not.toMatch(/SUMMARY:[^\r\n]*근무/);
     expect(first.fileIcs).toMatch(/SUMMARY:메가커피\r\n/);
-    expect(first.ics).toMatch(/SUMMARY:메가커피 급여 /);
+    expect(first.ics).not.toContain('UID:pay-');
+    expect(first.fileIcs).not.toContain('UID:pay-');
     expect(first.ics).not.toContain('METHOD:');
     expect(first.fileIcs).toContain('METHOD:PUBLISH');
     for (const line of first.ics.split('\r\n')) expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
@@ -286,24 +287,45 @@ describe('calendar feed identity', () => {
     expect(gone.fileIcs).toContain('SEQUENCE:2');
   });
 
-  it('does not duplicate a payday event when the amount changes', () => {
-    const wp = place({ id: 'cafe', name: '메가커피', payday: { kind: 'after_days', days: 0 }, holidayPay: false, rules: [] });
+  it('drops old payday events from the subscription and cancels them in the file', () => {
+    const wp = place({ id: 'cafe', name: '메가커피', holidayPay: false, rules: [] });
     const app = state({
       workplaces: [wp],
       shifts: [shift({ id: 's1', workplaceId: 'cafe', date: '2026-11-23', breakMin: 0, end: '13:00' })],
-      settings: { ...emptyState().settings, includePayday: true },
+      settings: {
+        ...emptyState().settings,
+        eventSeq: {
+          'shift-s1@moamoa.app': {
+            seq: 4,
+            hash: 'keep-this-shift',
+            stamp: '20261101T000000Z',
+            created: '20261101T000000Z',
+            summary: '메가커피',
+            date: '2026-11-23',
+            start: '09:00',
+            end: '13:00',
+          },
+          'pay-cafe-20261215@moamoa.app': {
+            seq: 2,
+            hash: 'old-payday',
+            stamp: '20261101T000000Z',
+            created: '20261101T000000Z',
+            summary: '메가커피 급여 41,280원',
+            date: '2026-12-15',
+            allDay: true,
+          },
+        },
+      },
     });
-    const first = planFeed(app, new Date('2026-11-21T02:00:00Z'), TODAY);
-    const uid = 'UID:pay-cafe-20261123@moamoa.app';
-    expect(first.ics.split(uid).length - 1).toBe(1);
-    const saved = { ...app, settings: { ...app.settings, eventSeq: first.eventSeq, tombstones: first.tombstones } };
-    const richer = {
-      ...saved,
-      shifts: [...saved.shifts, shift({ id: 's2', workplaceId: 'cafe', date: '2026-11-23', start: '18:00', end: '21:00', breakMin: 0 })],
-    };
-    const second = planFeed(richer, new Date('2026-11-21T05:00:00Z'), TODAY);
-    expect(second.ics.split(uid).length - 1).toBe(1);
-    expect(second.ics).toContain('SEQUENCE:1');
+    const plan = planFeed(app, new Date('2026-11-21T02:00:00Z'), TODAY);
+    expect(plan.ics).toContain('UID:shift-s1@moamoa.app');
+    expect(plan.ics).not.toContain('UID:pay-');
+    expect(plan.ics).not.toContain('STATUS:CANCELLED');
+    expect(plan.fileIcs).toContain('UID:shift-s1@moamoa.app');
+    expect(plan.fileIcs).toContain('UID:pay-cafe-20261215@moamoa.app');
+    expect(plan.fileIcs).toContain('STATUS:CANCELLED');
+    expect(plan.fileIcs).toContain('SEQUENCE:3');
+    expect(plan.fileIcs).toContain('DTSTART;VALUE=DATE:20261215');
   });
 });
 

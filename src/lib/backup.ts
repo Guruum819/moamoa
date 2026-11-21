@@ -72,7 +72,10 @@ export function parseBackup(text: string, previous: AppState, today?: string): A
   if (!Array.isArray(raw.workplaces) || !Array.isArray(raw.shifts)) {
     throw new Error('모아모아 백업 파일이 아니에요.');
   }
-  const settings: Settings = { ...emptySettings(), ...(raw.settings ?? {}) };
+  const rawSettings = (raw.settings ?? {}) as Settings & { includePayday?: boolean };
+  const settings: Settings = { ...emptySettings(), ...rawSettings };
+  delete rawSettings.includePayday;
+  delete (settings as { includePayday?: boolean }).includePayday;
   if (!ALARMS.has(settings.alarm)) settings.alarm = '30';
   if (!settings.githubToken) settings.githubToken = previous.settings.githubToken;
   settings.eventSeq = settings.eventSeq && typeof settings.eventSeq === 'object' ? settings.eventSeq : {};
