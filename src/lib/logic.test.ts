@@ -236,6 +236,10 @@ describe('calendar feed identity', () => {
     const first = planFeed(base, now, TODAY);
     expect(first.ics).toContain('UID:shift-s1@moamoa.app');
     expect(first.ics).toContain('SEQUENCE:0');
+    expect(first.ics).toMatch(/SUMMARY:메가커피\r\n/);
+    expect(first.ics).not.toMatch(/SUMMARY:[^\r\n]*근무/);
+    expect(first.fileIcs).toMatch(/SUMMARY:메가커피\r\n/);
+    expect(first.ics).toMatch(/SUMMARY:메가커피 급여 /);
     expect(first.ics).not.toContain('METHOD:');
     expect(first.fileIcs).toContain('METHOD:PUBLISH');
     for (const line of first.ics.split('\r\n')) expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
@@ -244,6 +248,22 @@ describe('calendar feed identity', () => {
     const again = planFeed(saved, now, TODAY);
     expect(again.ics).toBe(first.ics);
     expect(again.seqDirty).toBe(false);
+
+    const legacySeq = saved.settings.eventSeq['shift-s1@moamoa.app'];
+    const legacy: AppState = {
+      ...saved,
+      settings: {
+        ...saved.settings,
+        eventSeq: {
+          ...saved.settings.eventSeq,
+          'shift-s1@moamoa.app': { ...legacySeq, hash: 'old-title-with-suffix', summary: '메가커피 근무' },
+        },
+      },
+    };
+    const renamed = planFeed(legacy, new Date('2026-11-21T02:30:00Z'), TODAY);
+    expect(renamed.ics).toContain('UID:shift-s1@moamoa.app');
+    expect(renamed.ics).toMatch(/SUMMARY:메가커피\r\n/);
+    expect(renamed.ics).toContain('SEQUENCE:1');
 
     const moved: AppState = {
       ...saved,

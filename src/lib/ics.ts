@@ -91,7 +91,7 @@ function collect(state: AppState, today: string): Draft[] {
     if (shift.memo) lines.push(shift.memo);
     drafts.push({
       uid: `shift-${shift.id}@moamoa.app`,
-      summary: `${wp.name} 근무`,
+      summary: wp.name,
       description: lines.join('\n'),
       date: shift.date,
       start: shift.start,
